@@ -7,10 +7,31 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node / Frontend Build
 node_modules
 dist
 dist-ssr
 *.local
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+venv/
+.venv/
+env/
+ENV/
+
+# Model Checkpoints (Do not commit binary weights)
+backend/weights/
+*.pt
+*.pth
+*.onnx
+*.engine
 
 # Editor directories and files
 .vscode/*
@@ -27,3 +48,4 @@ dist-ssr
 .env
 .env.local
 .env.production
+backend/.env

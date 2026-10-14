@@ -1,81 +1,135 @@
 # RailGuard AI — Railway Track Defect Detection & Severity Assessment System
 
-RailGuard AI is an industrial-grade permanent way engineering frontend designed for railway track inspectors, permanent way engineers, and infrastructure authorities. It delivers automated surface defect localization, UIC severity assessment, and maintenance protocol enforcement.
+RailGuard AI is an industrial-grade permanent way engineering software application designed for railway track inspectors, permanent way engineers, and infrastructure authorities. It delivers automated surface defect localization using a fine-tuned **YOLOv8n** model, UIC 712 R severity evaluation, and maintenance protocol enforcement.
 
 ---
 
-## 1. System Overview
+## 1. System Architecture
 
-- **Target Model**: YOLOv8 Nano (`YOLOv8n`) trained on 640×640 optical rail scans.
-- **Defect Taxonomy (3 Classes)**:
-  1. **Spalling / Flaking** (UIC 712 R / Code 221) — Gauge corner & running band Rolling Contact Fatigue (RCF).
-  2. **Wheel Burn / Slip Damage** (UIC 712 R / Code 225) — Locomotive tractive friction & martensitic thermal degradation.
-  3. **Squat Defect** (UIC 712 R / Code 227) — Sub-surface fatigue crack propagation & dynamic impact depressions.
-- **Model Checkpoint**: Best weights checkpoint (`best.pt`) staged in Google Drive from the Colab training pipeline.
+```
+RailGuard AI
+├── frontend/ (React 18 + TypeScript + Vite + Tailwind CSS)
+│   ├── src/components/inspection/  (Canvas, Defect Dossier, Docket Modal)
+│   ├── src/services/railGuardApi.ts (Typed HTTP API client with predict/health integration)
+│   └── src/views/                  (Workspace, Audit Log, Severity Matrix, Model Specs)
+└── backend/ (FastAPI + Ultralytics YOLOv8 + PIL)
+    ├── main.py                     (Inference service, CORS, health & prediction endpoints)
+    ├── requirements.txt            (FastAPI, Uvicorn, Ultralytics, PyTorch, Pillow, Pytest)
+    ├── weights/                    (Trained YOLOv8n checkpoint: railguard_yolov8n_best.pt)
+    └── tests/test_api.py           (Automated test suite: health, validation, schema, diagnostics)
+```
 
----
-
-## 2. Industrial-Editorial Design System
-
-Built strictly adhering to specialized railway engineering design aesthetics:
-- **Warm Ivory Background**: `#F4F2EC` (`bg-ivory-100`)
-- **Charcoal Contrast**: `#252A28` (`bg-charcoal-900` / text primary)
-- **Restrained Signal Orange**: `#D9653B` (`bg-signal-orange` / markers & warnings)
-- **Muted Sage Positive State**: `#DDE4DB` (`bg-sage-200` / verified track segments)
-- **Neutral Industrial Borders**: `#DCD8CE` and `#CCC7BA`
-- **Typography**: IBM Plex Sans / Inter for UI; IBM Plex Mono for technical coordinates and chainage telemetry.
-- **Zero Generic AI Tropes**: Free of purple gradients, emojis, glowing neon borders, or pill containers.
-
----
-
-## 3. Key Modules & Views
-
-1. **`01 // INSPECTION WORKSPACE`**:
-   - Interactive high-resolution track visualizer with zoom, pan, reticle crosshair, and normalized bounding box overlays.
-   - Pre-calibrated Colab benchmark track presets (Squat, Wheel Burn, Spalling, and Nominal Track).
-   - Ingestion portal for new optical inspection photographs (PNG, JPG, WebP).
-   - Live confidence cutoff slider (10% to 95%) and dynamic class visibility filters.
-   - Inspector dossier featuring UIC classification, root cause analysis, and Temporary Speed Restriction (TSR) mandates.
-   - One-click **Official Railway Defect Docket generator** (printable UIC-712-FORM-D and JSON export).
-
-2. **`02 // TRACK AUDIT LOG`**:
-   - Division archive with search by Chainage (e.g. `KM 142+250`), Line Name, or ID.
-   - Multi-parameter filtering by defect class and severity tier.
-   - Direct loading of historical scans back into the Inspection Workspace.
-
-3. **`03 // UIC SEVERITY PROTOCOLS`**:
-   - Official UIC 712 R engineering catalog for all 3 classes.
-   - Interactive Permanent Way Severity Calculator (estimates severity, TSR speed restrictions, and intervention timelines based on depth, surface length, line speed, and annual tonnage).
-
-4. **`04 // YOLOv8 MODEL & DRIVE BRIDGE`**:
-   - Colab training provenance disclosure (Epoch 100/100, AdamW, mAP@0.5: 88.4%).
-   - Google Drive checkpoint staging validator.
-   - Production FastAPI backend code contract (`main.py`) ready for local inference binding.
+- **Model Architecture**: Ultralytics YOLOv8 Nano (`YOLOv8n`) trained on 640×640 optical rail scans.
+- **Trained Checkpoint**: `backend/weights/railguard_yolov8n_best.pt` (6.2 MB)
+- **Trained Classes (Exact Order)**:
+  - **Class 0**: `spalling` (UIC 712 R / Code 221 — Rolling Contact Fatigue)
+  - **Class 1**: `wheel burn` (UIC 712 R / Code 225 — Martensitic slip damage)
+  - **Class 2**: `squat` (UIC 712 R / Code 227 — Transverse sub-surface crack propagation)
 
 ---
 
-## 4. Commands to Run & Build
+## 2. Windows PowerShell Setup & Execution Guide
 
-### Development Server
-```bash
+Follow these exact steps in Windows PowerShell to set up and run the system:
+
+### Step 1: Create Python Virtual Environment
+Open Windows PowerShell in the project root directory (`d:\Maxwell\Projects\AIDS_MP`):
+```powershell
+python -m venv venv
+```
+
+### Step 2: Activate the Virtual Environment
+```powershell
+.\venv\Scripts\Activate.ps1
+```
+*(If PowerShell restricts script execution, run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` first).*
+
+### Step 3: Install Backend Dependencies
+```powershell
+pip install -r backend/requirements.txt
+```
+
+### Step 4: Run Backend Automated Tests
+```powershell
+python -m pytest backend/tests/test_api.py -v
+```
+
+### Step 5: Start the FastAPI Inference Service (Port 8000)
+```powershell
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+> The API will be active at `http://127.0.0.1:8000`
+
+### Step 6: Start the Frontend Application (Port 3000)
+Open a **second PowerShell terminal** in the project root directory:
+```powershell
 npm run dev
 ```
-> Accessible at `http://localhost:3000/`
+> Access the web application at `http://localhost:3000/`
 
-### Type Check
-```bash
-npx tsc --noEmit
+---
+
+## 3. Verification & API Testing
+
+### Check Backend Health
+In PowerShell:
+```powershell
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/health"
+```
+**Expected Response:**
+```json
+{
+  "status": "healthy",
+  "model_loaded": true,
+  "model_name": "YOLOv8n",
+  "weights_path": "...\\backend\\weights\\railguard_yolov8n_best.pt",
+  "weights_file_exists": true,
+  "classes": {
+    "0": "spalling",
+    "1": "wheel burn",
+    "2": "squat"
+  },
+  "device": "cpu"
+}
 ```
 
-### Production Build
-```bash
-npm run build
+### Execute a Prediction via Command Line
+```powershell
+# Using curl.exe (built into Windows) to submit an optical track photo
+curl.exe -X POST "http://127.0.0.1:8000/api/v1/predict" `
+  -F "file=@path\to\your\rail_image.jpg" `
+  -F "confidence=0.45" `
+  -F "iou=0.45"
 ```
 
 ---
 
-## 5. Next Recommended Stage: Model & Backend Integration
+## 4. Environment Variables
 
-1. Download `best.pt` from Google Drive into `backend/weights/best.pt`.
-2. Launch the FastAPI inference server with Ultralytics (`uvicorn main:app --port 8000`).
-3. Set `VITE_USE_LIVE_API=true` and `VITE_API_ENDPOINT=http://localhost:8000/api/v1` in `.env`.
+### Frontend Configuration (`.env`)
+```ini
+# Connect directly to the live FastAPI backend
+VITE_USE_LIVE_API=true
+
+# API endpoint URL
+VITE_API_ENDPOINT=http://localhost:8000/api/v1
+```
+
+### Backend Configuration (`backend/.env.example`)
+```ini
+HOST=127.0.0.1
+PORT=8000
+WEIGHTS_PATH=weights/railguard_yolov8n_best.pt
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+MAX_UPLOAD_SIZE_BYTES=26214440
+```
+
+---
+
+## 5. Verification Commands
+
+| Command | Purpose |
+| :--- | :--- |
+| `python -m pytest backend/tests/test_api.py -v` | Executes 7 backend test suites |
+| `npx tsc --noEmit` | Typechecks all TypeScript files (0 errors) |
+| `npm run build` | Produces optimized production bundle |

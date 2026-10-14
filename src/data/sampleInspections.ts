@@ -24,6 +24,7 @@ export const SAMPLE_INSPECTIONS: InspectionRecord[] = [
     },
     inferenceTimeMs: 42.8,
     modelConfidenceCutoff: 0.45,
+    isDemoMode: true,
     summarySeverity: 'critical',
     status: 'action_required',
     notes:
@@ -93,6 +94,7 @@ export const SAMPLE_INSPECTIONS: InspectionRecord[] = [
     },
     inferenceTimeMs: 38.4,
     modelConfidenceCutoff: 0.45,
+    isDemoMode: true,
     summarySeverity: 'high',
     status: 'action_required',
     notes:
@@ -142,6 +144,7 @@ export const SAMPLE_INSPECTIONS: InspectionRecord[] = [
     },
     inferenceTimeMs: 41.1,
     modelConfidenceCutoff: 0.45,
+    isDemoMode: true,
     summarySeverity: 'medium',
     status: 'verified',
     notes:
@@ -191,6 +194,7 @@ export const SAMPLE_INSPECTIONS: InspectionRecord[] = [
     },
     inferenceTimeMs: 36.9,
     modelConfidenceCutoff: 0.45,
+    isDemoMode: true,
     summarySeverity: 'none',
     status: 'verified',
     notes:

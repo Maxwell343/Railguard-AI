@@ -55,6 +55,7 @@ export interface InspectionRecord {
   notes?: string;
   inferenceTimeMs: number;
   modelConfidenceCutoff: number;
+  isDemoMode?: boolean;
 }
 
 export interface ModelPipelineStatus {

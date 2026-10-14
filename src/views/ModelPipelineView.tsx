@@ -1,102 +1,88 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SectionHeader } from '../components/ui/SectionHeader';
 import { Button } from '../components/ui/Button';
 import { Alert } from '../components/ui/Alert';
 import {
-  Cloud,
   HardDrive,
   Terminal,
   Copy,
   Check,
   RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react';
 import { railGuardApi } from '../services/railGuardApi';
+import { ModelPipelineStatus } from '../types/inspection';
 
 export const ModelPipelineView: React.FC = () => {
-  const [driveUrl, setDriveUrl] = useState<string>(
-    'https://drive.google.com/drive/folders/1RailGuard_YOLOv8n_Weights_Colab'
-  );
+  const [modelStatus, setModelStatus] = useState<ModelPipelineStatus | null>(null);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [syncStatus, setSyncStatus] = useState<{ success: boolean; message: string } | null>(null);
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
 
-  const handleTestDriveConnection = async () => {
+  const checkStatus = async () => {
     setIsVerifying(true);
-    setSyncStatus(null);
     try {
-      const res = await railGuardApi.syncDriveCheckpoint(driveUrl);
-      setSyncStatus(res);
-    } catch {
+      const status = await railGuardApi.getModelStatus();
+      setModelStatus(status);
+      setSyncStatus({
+        success: status.isConnected,
+        message: status.isConnected
+          ? `FastAPI service is active on ${status.apiEndpointUrl}. Model '${status.checkpointName}' loaded on ${status.inferenceDevice}.`
+          : `FastAPI service is unreachable at http://localhost:8000. Run: uvicorn backend.main:app --port 8000`,
+      });
+    } catch (e: any) {
       setSyncStatus({
         success: false,
-        message: 'Could not connect to Google Drive link. Check share permissions.',
+        message: `Connection failed: ${e.message}`,
       });
     } finally {
       setIsVerifying(false);
     }
   };
 
+  useEffect(() => {
+    checkStatus();
+  }, []);
+
   const pythonFastApiSnippet = `# ==============================================================================
-# RailGuard AI — Production Inference API Boundary (FastAPI + Ultralytics YOLOv8n)
+# RailGuard AI — Production Inference API (FastAPI + Ultralytics YOLOv8n)
 # File: backend/main.py
-# Checkpoint downloaded from Google Drive: weights/best.pt
+# Checkpoint: backend/weights/railguard_yolov8n_best.pt
 # ==============================================================================
 
-from fastapi import FastAPI, UploadFile, File, Form
+# Run with:
+# uvicorn backend.main:app --host 127.0.0.1 --port 8000
+
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
-import numpy as np
-import cv2
+from PIL import Image
+import io
 
-app = FastAPI(title="RailGuard AI Inference Engine", version="1.0.0")
+app = FastAPI(title="RailGuard AI — Inference Engine", version="1.0.0")
 
-# Allow frontend requests
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Load trained Colab checkpoint
-# Transfer 'best.pt' from your Google Drive into the local weights directory
-model = YOLO("weights/best.pt")
+model = YOLO("backend/weights/railguard_yolov8n_best.pt")
 
-CLASS_NAMES = {0: "spalling", 1: "wheel_burn", 2: "squat"}
+@app.get("/health")
+def health():
+    return {"status": "healthy", "model_loaded": True, "classes": model.names}
 
-@app.post("/api/v1/detect")
-async def detect_track_defects(
-    file: UploadFile = File(...),
-    confidence: float = Form(0.45),
-    iou: float = Form(0.45)
-):
+@app.post("/api/v1/predict")
+async def predict(file: UploadFile = File(...), confidence: float = Form(0.45), iou: float = Form(0.45)):
     contents = await file.read()
-    nparr = np.frombuffer(contents, np.uint8)
-    image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    h, w, _ = image.shape
-
-    # Execute YOLOv8n inference
+    image = Image.open(io.BytesIO(contents)).convert("RGB")
     results = model.predict(image, conf=confidence, iou=iou, imgsz=640)
-    predictions = []
-
-    for box in results[0].boxes:
-        xywh = box.xywhn[0].tolist() # Normalized [x_center, y_center, width, height]
-        cls_id = int(box.cls[0].item())
-        conf = float(box.conf[0].item())
-
-        predictions.append({
-            "id": f"pred-{cls_id}-{int(conf*1000)}",
-            "defectClass": CLASS_NAMES.get(cls_id, "spalling"),
-            "confidence": round(conf, 3),
-            "bbox": {
-                "x": round(xywh[0] - xywh[2]/2, 4),
-                "y": round(xywh[1] - xywh[3]/2, 4),
-                "width": round(xywh[2], 4),
-                "height": round(xywh[3], 4),
-            }
-        })
-
-    return {"predictions": predictions, "imageDimensions": {"width": w, "height": h}}`;
+    # Extracts normalized bounding boxes [x, y, w, h] aligned with frontend canvas
+    ...`;
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(pythonFastApiSnippet);
@@ -109,22 +95,31 @@ async def detect_track_defects(
       <SectionHeader
         sectionNumber="04"
         metadata="MACHINE LEARNING INTEGRATION SPECIFICATION"
-        title="YOLOv8n Model &amp; Google Drive Checkpoint Bridge"
-        subtitle="Transparent architecture mapping: Google Colab training provenance, Google Drive weight staging, and the standard REST API contract for production model deployment."
+        title="YOLOv8n Model &amp; FastAPI Backend Runtime"
+        subtitle="Production inference architecture: YOLOv8n trained weights, FastAPI REST endpoint contract, and real-time backend health diagnostics."
       />
 
-      {/* Architecture Provenance Banner */}
-      <Alert
-        variant="info"
-        title="Model Provenance &amp; Staging Disclosure"
-        icon={<HardDrive className="w-5 h-5 text-charcoal-700 shrink-0 mt-0.5" />}
-      >
-        The YOLOv8n defect detector was trained in Google Colab on the 3 designated classes
-        (<strong>Spalling</strong>, <strong>Wheel burn</strong>, and <strong>Squat</strong>). The best
-        checkpoint (<code>best.pt</code>) is stored in Google Drive. This frontend is pre-engineered with a
-        decoupled API client interface (<code>IRailGuardApiService</code>) that interfaces with the local mock
-        telemetry now, and will seamlessly bind to the local FastAPI backend once the checkpoint is downloaded.
-      </Alert>
+      {/* Model Integration Status Alert */}
+      {modelStatus?.isConnected ? (
+        <Alert
+          variant="success"
+          title="Live Inference Backend Connected &amp; Active"
+          icon={<CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />}
+        >
+          FastAPI inference backend is responding at <code>{modelStatus.apiEndpointUrl}</code>. Checkpoint{' '}
+          <strong>{modelStatus.checkpointName}</strong> is verified on device <strong>{modelStatus.inferenceDevice}</strong>.
+          The Inspection Workspace is consuming live YOLOv8n predictions.
+        </Alert>
+      ) : (
+        <Alert
+          variant="warning"
+          title="FastAPI Service Standby"
+          icon={<AlertTriangle className="w-5 h-5 text-defect-wheelburn shrink-0 mt-0.5" />}
+        >
+          FastAPI service is not running on <code>http://localhost:8000</code>. Start it with:{' '}
+          <code className="bg-ivory-300 px-1 py-0.5 font-bold">python -m uvicorn backend.main:app --port 8000</code>.
+        </Alert>
+      )}
 
       {/* Model Specifications Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -153,51 +148,54 @@ async def detect_track_defects(
         </div>
       </div>
 
-      {/* Google Drive Checkpoint Bridge Testing Form */}
+      {/* Checkpoint File Verification Block */}
       <div className="bg-white border-2 border-charcoal-900 p-5 space-y-4">
         <div className="flex items-center justify-between border-b border-rail-border pb-3">
           <div className="flex items-center gap-2">
-            <Cloud className="w-5 h-5 text-signal-orange" />
+            <HardDrive className="w-5 h-5 text-signal-orange" />
             <h3 className="font-bold text-base text-charcoal-900">
-              Google Drive Checkpoint Staging Pipeline
+              Integrated Model Checkpoint File
             </h3>
           </div>
           <span className="text-[11px] font-mono text-charcoal-500 uppercase">
-            REMOTE REPOSITORY
+            LOCAL REPOSITORY
           </span>
         </div>
 
         <div className="space-y-2 text-xs">
-          <label className="block text-[11px] font-mono uppercase font-semibold text-charcoal-700">
-            Google Drive Checkpoint Folder / URL (best.pt)
-          </label>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              value={driveUrl}
-              onChange={(e) => setDriveUrl(e.target.value)}
-              className="flex-1 bg-ivory-100 border border-rail-border px-3 py-2 font-mono text-xs text-charcoal-900 focus:outline-none focus:border-signal-orange"
-            />
+          <div className="p-3 bg-ivory-100 border border-rail-border font-mono text-xs text-charcoal-900 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-charcoal-500 uppercase text-[10px]">Checkpoint File:</span>
+              <span className="font-bold text-charcoal-950">backend/weights/railguard_yolov8n_best.pt</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-charcoal-500 uppercase text-[10px]">Trained Classes (Order):</span>
+              <span className="font-bold text-signal-orange">0: spalling, 1: wheel burn, 2: squat</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-charcoal-500 uppercase text-[10px]">Target Inference Endpoint:</span>
+              <span className="font-bold text-charcoal-950">POST /api/v1/predict</span>
+            </div>
+          </div>
+
+          <div className="pt-2 flex items-center justify-between">
+            <div className="text-xs text-charcoal-600">
+              Click to ping the backend <code>/health</code> endpoint and check model availability:
+            </div>
             <Button
               variant="primary"
               size="sm"
               isLoading={isVerifying}
-              onClick={handleTestDriveConnection}
+              onClick={checkStatus}
               leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
             >
-              TEST DRIVE STAGING
+              TEST BACKEND HEALTH
             </Button>
           </div>
-          <p className="text-[11px] text-charcoal-500">
-            Target Checkpoint:{' '}
-            <code className="bg-ivory-200 px-1 py-0.5 text-charcoal-800">
-              weights/railguard_yolov8n_best.pt
-            </code>
-          </p>
         </div>
 
         {syncStatus && (
-          <Alert variant={syncStatus.success ? 'success' : 'critical'} title="Drive Staging Status">
+          <Alert variant={syncStatus.success ? 'success' : 'warning'} title="Health Diagnostic Result">
             {syncStatus.message}
           </Alert>
         )}
@@ -210,10 +208,10 @@ async def detect_track_defects(
             <Terminal className="w-5 h-5 text-charcoal-900" />
             <div>
               <h3 className="font-bold text-base text-charcoal-900">
-                Backend API Contract (FastAPI Deployment Ready)
+                FastAPI Backend Architecture (backend/main.py)
               </h3>
               <p className="text-xs text-charcoal-600">
-                This clean API contract mirrors the TypeScript interface in <code>src/services/railGuardApi.ts</code>.
+                Production service implementation running Uvicorn and Ultralytics YOLOv8n.
               </p>
             </div>
           </div>
@@ -236,10 +234,9 @@ async def detect_track_defects(
         {/* Environment Variable Setup */}
         <div className="pt-2">
           <div className="text-xs font-mono font-semibold uppercase text-charcoal-700 mb-1">
-            HOW TO SWITCH TO LIVE INFERENCE IN STAGE 2:
+            ENVIRONMENT CONFIGURATION (.env):
           </div>
           <div className="p-3 bg-ivory-200 border border-rail-border text-xs font-mono text-charcoal-800 space-y-1">
-            <div># In project root, create or edit .env:</div>
             <div className="font-bold text-charcoal-950">VITE_USE_LIVE_API=true</div>
             <div className="font-bold text-charcoal-950">VITE_API_ENDPOINT=http://localhost:8000/api/v1</div>
           </div>
