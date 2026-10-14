@@ -221,9 +221,12 @@ export class HttpRailGuardService implements IRailGuardApiService {
       formData.append('file', fileInput, fileName);
     }
 
-    if (options?.confidenceCutoff !== undefined) {
-      formData.append('confidence', options.confidenceCutoff.toString());
-    }
+    // Send a 0.10 base floor to the inference backend so candidates between 10% and 45%
+    // are retained for real-time frontend slider adjustment without requiring re-inference.
+    const backendConfidenceFloor = options?.confidenceCutoff !== undefined
+      ? Math.min(0.10, options.confidenceCutoff)
+      : 0.10;
+    formData.append('confidence', backendConfidenceFloor.toString());
 
     let response: Response;
     const predictUrl = `${this.baseUrl}/predict`;

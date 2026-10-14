@@ -33,6 +33,11 @@ backend/weights/
 *.onnx
 *.engine
 
+# Datasets & evaluation caches
+datasets/
+backend/datasets/
+*.cache
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -48,8 +48,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   );
   const [hoveredPredictionId, setHoveredPredictionId] = useState<string | null>(null);
 
-  // Model confidence & class filtering
-  const [confidenceCutoff, setConfidenceCutoff] = useState<number>(0.45);
+  // Model confidence & class filtering (Default to 0.15 for calibrated defect detection)
+  const [confidenceCutoff, setConfidenceCutoff] = useState<number>(0.15);
   const [visibleClasses, setVisibleClasses] = useState<Set<DefectClass>>(
     new Set(['spalling', 'wheel_burn', 'squat'])
   );
@@ -150,6 +150,51 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   // Handle drag-and-drop directly onto canvas
   const handleDropFile = (file: File) => {
     stageUploadedFile(file);
+  };
+
+  const DEMO_TEST_IMAGES = [
+    {
+      name: 'rsd_spalling_74pct.jpg',
+      label: 'Spalling Defect (74% Conf)',
+      badge: 'Class 0 • RSD-YOLO Test Split',
+      meta: 'UIC 712 R / 221 Gauge Flaking',
+    },
+    {
+      name: 'rsd_wheel_burn_73pct.jpg',
+      label: 'Wheel Burn (73% Conf)',
+      badge: 'Class 1 • RSD-YOLO Test Split',
+      meta: 'UIC 712 R / 225 Slip Gouge',
+    },
+    {
+      name: 'rsd_squat_70pct.jpg',
+      label: 'Squat Defect (70% Conf)',
+      badge: 'Class 2 • RSD-YOLO Test Split',
+      meta: 'UIC 712 R / 227 Fissure Indentation',
+    },
+    {
+      name: 'real_nominal_track.jpg',
+      label: 'Nominal Track (0 Defects)',
+      badge: 'Control • Clean Track',
+      meta: 'Clean Running Rail Surface',
+    },
+  ];
+
+  // Stage a demo test image directly into the analysis pipeline
+  const handleLoadDemoImage = async (img: (typeof DEMO_TEST_IMAGES)[0]) => {
+    try {
+      setUploadError(null);
+      const res = await fetch(`/demo_images/${img.name}`);
+      if (!res.ok) throw new Error(`Could not load ${img.name}`);
+      const blob = await res.blob();
+      const file = new File([blob], img.name, { type: 'image/jpeg' });
+      stageUploadedFile(file);
+      setTrackMeta((prev) => ({
+        ...prev,
+        lineName: `Track Section — ${img.label}`,
+      }));
+    } catch (err) {
+      setUploadError(`Failed to load demo image: ${String(err)}`);
+    }
   };
 
   // Select a benchmark preset
@@ -282,12 +327,48 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
       {/* Preset Test Tracks & Ingestion Metadata Bar */}
       <div className="bg-ivory-50 border border-rail-border p-4 space-y-4">
-        {/* Sample Inspection Selector */}
+        {/* Quick Ingest Demo Images (Live Real API Test) */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-mono uppercase font-bold text-charcoal-700 flex items-center gap-1.5">
+              <Upload className="w-3.5 h-3.5 text-signal-orange" />
+              <span>TEST WITH GENERATED OPTICAL SAMPLES (SEND TO REAL YOLOv8 BACKEND)</span>
+            </span>
+            <span className="text-[10px] font-mono text-charcoal-500">
+              Click to stage image, then press 'START YOLOv8 ANALYSIS'
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {DEMO_TEST_IMAGES.map((img) => (
+              <button
+                key={img.name}
+                type="button"
+                disabled={isScanning}
+                onClick={() => handleLoadDemoImage(img)}
+                className="group text-left p-2.5 border border-rail-border bg-white hover:border-signal-orange hover:bg-orange-50/20 transition-all text-xs"
+              >
+                <div className="flex items-center justify-between text-[10px] font-mono mb-1">
+                  <span className="text-charcoal-500 uppercase font-semibold">{img.badge}</span>
+                  <span className="text-signal-orange font-bold group-hover:underline">STAGE SCAN →</span>
+                </div>
+                <div className="font-semibold text-charcoal-900 group-hover:text-signal-orange">
+                  {img.label}
+                </div>
+                <div className="font-mono text-[10px] text-charcoal-500 truncate">
+                  {img.meta}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Colab Benchmark Test Presets */}
+        <div className="pt-3 border-t border-rail-border">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-mono uppercase font-bold text-charcoal-700 flex items-center gap-1.5">
               <Camera className="w-3.5 h-3.5 text-signal-orange" />
-              <span>COLAB BENCHMARK TEST PRESETS (YOLOv8n TRAINED DOMAIN)</span>
+              <span>COLAB BENCHMARK TEST PRESETS (CALIBRATED GROUND TRUTH)</span>
             </span>
             <span className="text-[10px] font-mono text-charcoal-500">
               Select calibrated condition to evaluate detection accuracy

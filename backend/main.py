@@ -7,9 +7,13 @@ Classes: 0: 'spalling', 1: 'wheel burn', 2: 'squat'
 import io
 import os
 import time
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Dict, List, Optional
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger("railguard.inference")
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -148,7 +152,7 @@ def health_check():
 @app.post("/api/v1/detect")
 async def predict_defects(
     file: UploadFile = File(..., description="Optical railway track image (JPEG, PNG, WebP)"),
-    confidence: float = Form(0.45, description="Confidence threshold cutoff [0.05..0.95]"),
+    confidence: float = Form(0.15, description="Confidence threshold cutoff [0.05..0.95]"),
     iou: float = Form(0.45, description="Non-maximum suppression IoU threshold [0.1..0.9]"),
 ):
     """
@@ -285,7 +289,14 @@ async def predict_defects(
                 }
             )
 
-    # 7. Compute summary severity across detected defects
+    # 7. Telemetry logging for operational observability
+    logger.info(
+        f"[INFERENCE] File: {file.filename} | Dims: {orig_width}x{orig_height} | "
+        f"Conf Cutoff: {conf_threshold} | IoU: {iou_threshold} | Inference Time: {elapsed_ms}ms | "
+        f"Retained detections: {len(predictions)}"
+    )
+
+    # 8. Compute summary severity across detected defects
     has_critical = any(p["severity"] == "critical" for p in predictions)
     has_high = any(p["severity"] == "high" for p in predictions)
     has_medium = any(p["severity"] == "medium" for p in predictions)
