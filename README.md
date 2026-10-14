@@ -21,10 +21,17 @@ RailGuard AI
 
 - **Model Architecture**: Ultralytics YOLOv8 Nano (`YOLOv8n`) trained on 640×640 optical rail scans.
 - **Trained Checkpoint**: `backend/weights/railguard_yolov8n_best.pt` (6.2 MB)
+- **Dataset**: RSD-YOLO Dataset v1.0 (4,020 images total: 3,216 train, 402 validation, 402 held-out test)
 - **Trained Classes (Exact Order)**:
   - **Class 0**: `spalling` (UIC 712 R / Code 221 — Rolling Contact Fatigue)
   - **Class 1**: `wheel burn` (UIC 712 R / Code 225 — Martensitic slip damage)
   - **Class 2**: `squat` (UIC 712 R / Code 227 — Transverse sub-surface crack propagation)
+- **Independently Verified Benchmark Metrics (402 Held-out Test Images)**:
+  - Precision: 66.7% (Reported: 65.1%)
+  - Recall: 73.9% (Reported: 73.0%)
+  - mAP@0.5: 72.5% (Reported: 71.9%)
+  - mAP@0.5:0.95: 34.4% (Reported: 34.6%)
+  - Per-class AP@0.5: Spalling = 75.1%, Wheel Burn = 76.8%, Squat = 65.5%
 
 ---
 

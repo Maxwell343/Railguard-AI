@@ -136,9 +136,9 @@ async def predict(file: UploadFile = File(...), confidence: float = Form(0.45), 
         </div>
 
         <div className="bg-ivory-50 border border-rail-border p-4">
-          <div className="text-[10px] font-mono uppercase text-charcoal-500">VALIDATION mAP@0.5</div>
-          <div className="text-xl font-bold font-mono text-signal-orange mt-1">88.4% mAP</div>
-          <div className="text-xs text-charcoal-600 mt-1">Precision: 86.2% • Recall: 84.1%</div>
+          <div className="text-[10px] font-mono uppercase text-charcoal-500">HELD-OUT TEST mAP@0.5</div>
+          <div className="text-xl font-bold font-mono text-signal-orange mt-1">72.5% mAP</div>
+          <div className="text-xs text-charcoal-600 mt-1">Precision: 66.7% • Recall: 73.9% (RSD-YOLO)</div>
         </div>
 
         <div className="bg-ivory-50 border border-rail-border p-4">

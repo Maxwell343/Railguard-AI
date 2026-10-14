@@ -46,9 +46,9 @@ export class MockRailGuardService implements IRailGuardApiService {
     apiEndpointUrl: import.meta.env.VITE_API_ENDPOINT || 'http://localhost:8000/api/v1/predict',
     isConnected: false,
     latencyMs: 41.2,
-    mAP50: 0.884,
-    precision: 0.862,
-    recall: 0.841,
+    mAP50: 0.725,
+    precision: 0.667,
+    recall: 0.739,
     inferenceDevice: 'Simulated Engine (Dev Mock Mode Active)',
   };
 
@@ -221,11 +221,11 @@ export class HttpRailGuardService implements IRailGuardApiService {
       formData.append('file', fileInput, fileName);
     }
 
-    // Send a 0.10 base floor to the inference backend so candidates between 10% and 45%
+    // Send a 0.05 base floor to the inference backend so candidates between 5% and 95%
     // are retained for real-time frontend slider adjustment without requiring re-inference.
     const backendConfidenceFloor = options?.confidenceCutoff !== undefined
-      ? Math.min(0.10, options.confidenceCutoff)
-      : 0.10;
+      ? Math.min(0.05, options.confidenceCutoff)
+      : 0.05;
     formData.append('confidence', backendConfidenceFloor.toString());
 
     let response: Response;
@@ -340,9 +340,9 @@ export class HttpRailGuardService implements IRailGuardApiService {
         apiEndpointUrl: `${this.baseUrl}/predict`,
         isConnected: isHealthy,
         latencyMs: 38.2,
-        mAP50: 0.884,
-        precision: 0.862,
-        recall: 0.841,
+        mAP50: 0.725,
+        precision: 0.667,
+        recall: 0.739,
         inferenceDevice: String(health.device || 'CPU').toUpperCase(),
       };
     } catch {
@@ -356,9 +356,9 @@ export class HttpRailGuardService implements IRailGuardApiService {
         apiEndpointUrl: `${this.baseUrl}/predict`,
         isConnected: false,
         latencyMs: 0,
-        mAP50: 0.884,
-        precision: 0.862,
-        recall: 0.841,
+        mAP50: 0.725,
+        precision: 0.667,
+        recall: 0.739,
         inferenceDevice: 'Unavailable (Backend Unreachable)',
       };
     }

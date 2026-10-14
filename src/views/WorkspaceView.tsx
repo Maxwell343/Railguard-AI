@@ -17,7 +17,6 @@ import {
   Upload,
   Play,
   RotateCcw,
-  Camera,
   Trash2,
   AlertCircle,
   X,
@@ -155,27 +154,27 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const DEMO_TEST_IMAGES = [
     {
       name: 'rsd_spalling_74pct.jpg',
-      label: 'Spalling Defect (74% Conf)',
+      label: 'Spalling Defect (~74% Ref Conf)',
       badge: 'Class 0 • RSD-YOLO Test Split',
       meta: 'UIC 712 R / 221 Gauge Flaking',
     },
     {
       name: 'rsd_wheel_burn_73pct.jpg',
-      label: 'Wheel Burn (73% Conf)',
+      label: 'Wheel Burn (~73% Ref Conf)',
       badge: 'Class 1 • RSD-YOLO Test Split',
       meta: 'UIC 712 R / 225 Slip Gouge',
     },
     {
       name: 'rsd_squat_70pct.jpg',
-      label: 'Squat Defect (70% Conf)',
+      label: 'Squat Defect (~70% Ref Conf)',
       badge: 'Class 2 • RSD-YOLO Test Split',
       meta: 'UIC 712 R / 227 Fissure Indentation',
     },
     {
       name: 'real_nominal_track.jpg',
-      label: 'Nominal Track (0 Defects)',
-      badge: 'Control • Clean Track',
-      meta: 'Clean Running Rail Surface',
+      label: 'Nominal Track (Negative Control)',
+      badge: 'Clean Rail Control • No Detected Anomalies',
+      meta: 'Unannotated Clean Running Surface',
     },
   ];
 
@@ -197,15 +196,6 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     }
   };
 
-  // Select a benchmark preset
-  const handleSelectSample = (sample: InspectionRecord) => {
-    setActiveRecord(sample);
-    setSelectedPrediction(sample.predictions[0] || null);
-    setTrackMeta(sample.trackMeta);
-    setIsStaged(false);
-    setStagedFile(null);
-    setUploadError(null);
-  };
 
   // Execute YOLOv8n inference (Step 3: Start Analysis)
   const handleRunInference = async () => {
@@ -363,57 +353,6 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
           </div>
         </div>
 
-        {/* Colab Benchmark Test Presets */}
-        <div className="pt-3 border-t border-rail-border">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-mono uppercase font-bold text-charcoal-700 flex items-center gap-1.5">
-              <Camera className="w-3.5 h-3.5 text-signal-orange" />
-              <span>COLAB BENCHMARK TEST PRESETS (CALIBRATED GROUND TRUTH)</span>
-            </span>
-            <span className="text-[10px] font-mono text-charcoal-500">
-              Select calibrated condition to evaluate detection accuracy
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-            {SAMPLE_INSPECTIONS.map((sample, idx) => {
-              const isSelected = !isStaged && activeRecord?.id === sample.id;
-              const labels = [
-                'Squat Defect (Critical)',
-                'Wheel Burn Slip (High)',
-                'Gauge Spalling (Medium)',
-                'Nominal / Clean Track',
-              ];
-              return (
-                <button
-                  key={sample.id}
-                  type="button"
-                  disabled={isScanning}
-                  onClick={() => handleSelectSample(sample)}
-                  className={cn(
-                    'text-left p-2.5 border transition-all flex flex-col justify-between text-xs select-none',
-                    isSelected
-                      ? 'bg-ivory-200 border-charcoal-900 ring-1 ring-charcoal-900 font-medium'
-                      : 'bg-white border-rail-border hover:border-charcoal-500'
-                  )}
-                >
-                  <div className="flex items-center justify-between text-[10px] font-mono text-charcoal-500 mb-1">
-                    <span>CASE 0{idx + 1}</span>
-                    <span className="font-bold uppercase text-charcoal-800">
-                      {sample.summarySeverity}
-                    </span>
-                  </div>
-                  <div className="font-semibold text-charcoal-900 leading-snug line-clamp-1">
-                    {labels[idx] || sample.title}
-                  </div>
-                  <div className="font-mono text-[10px] text-charcoal-500 mt-1">
-                    {sample.trackMeta.chainageKm} • {sample.trackMeta.railProfile}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
 
         {/* Live Track Telemetry Fields */}
         <div className="pt-3 border-t border-rail-border grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
