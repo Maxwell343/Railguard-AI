@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-ivory: #F4F2EC;
+    --text-charcoal: #252A28;
+    --border-neutral: #DCD8CE;
+    --border-strong: #CCC7BA;
+    --signal-orange: #D9653B;
+    --sage-pos: #DDE4DB;
+  }
+
+  body {
+    background-color: #F4F2EC;
+    color: #252A28;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Accessible high-contrast focus rings */
+  :focus-visible {
+    outline: 2px solid #D9653B;
+    outline-offset: 2px;
+  }
+}
+
+/* Technical grid background pattern for inspection canvas and industrial feel */
+.rail-grid-pattern {
+  background-image: radial-gradient(#CCC7BA 0.75px, transparent 0.75px);
+  background-size: 16px 16px;
+}
+
+.rail-grid-dense {
+  background-image: 
+    linear-gradient(to right, rgba(220, 216, 206, 0.4) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(220, 216, 206, 0.4) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Custom technical scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #EBE7DD;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CCC7BA;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9BA6A1;
+}
+
+/* Monospace tabular numerals */
+.num-tabular {
+  font-variant-numeric: tabular-nums lining-nums;
+}
